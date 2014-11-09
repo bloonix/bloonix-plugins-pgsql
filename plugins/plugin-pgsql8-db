@@ -1,0 +1,241 @@
+plugin {
+    id 45
+    plugin PostgreSQL.DatabaseStatus
+    command check-pgsql8-db
+    datatype statistic
+    category Database,PostgreSQL
+    netaccess yes
+    prefer localhost
+    abstract PostgreSQL database check
+    description PostgreSQL statistics
+}
+
+statistic {
+    statkey blks_hit
+    alias Block hits
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_statio_user_tables (heap_blks_read + idx_blks_read + toast_blks_read + tidx_blks_read).
+}
+
+statistic {
+    statkey blks_read
+    alias Blocks read
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_statio_user_tables (heap_blks_hit + idx_blks_hit + toast_blks_hit + tidx_blks_hit).
+}
+
+statistic {
+    statkey blks_hitratio
+    alias Block hit ratio
+    datatype float
+    description Block hit ratio.
+}
+
+statistic {
+    statkey exlocks
+    alias Exclusive locks
+    datatype bigint
+    description See PostgreSQL documentation, statistic table pg_locks.
+}
+
+statistic {
+    statkey shrlocks
+    alias Shared locks
+    datatype bigint
+    description See PostgreSQL documentation, statistic table pg_locks.
+}
+
+statistic {
+    statkey locks
+    alias Locks
+    datatype bigint
+    description See PostgreSQL documentation, statistic table pg_locks.
+}
+
+statistic {
+    statkey n_tup_ins
+    alias Inserts
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_stat_all_tables.
+}
+
+statistic {
+    statkey n_tup_upd
+    alias Updates
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_stat_all_tables.
+}
+
+statistic {
+    statkey n_tup_del
+    alias Deletes
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_stat_all_tables.
+}
+
+statistic {
+    statkey seq_scan
+    alias Scans
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_stat_all_tables.
+}
+
+statistic {
+    statkey seq_tup_read
+    alias Reads
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_stat_all_tables.
+}
+
+statistic {
+    statkey idx_scan
+    alias Scans
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_stat_all_tables.
+}
+
+statistic {
+    statkey idx_tup_fetch
+    alias Fetches
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_stat_all_tables.
+}
+
+statistic {
+    statkey xact_commit
+    alias Commits
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_stat_database.
+}
+
+statistic {
+    statkey xact_rollback
+    alias Rollbacks
+    datatype float
+    description See PostgreSQL documentation, statistic table pg_stat_database.
+}
+
+chart {
+    id 1
+    title PostgreSQL - block hits
+    options {
+        ylabel bocks read/s - block hit/s
+        units default
+        chart-type area
+        series {
+            name blks_hit
+            color \#005467
+        }
+        series {
+            name blks_read
+            color \#ff7a0d
+        }
+    }
+}
+
+chart {
+    id 2
+    title PostgreSQL - block hit ratio
+    options {
+        ylabel ratio
+        units default
+        chart-type area
+        series {
+            name blks_hitratio
+            color \#005467
+        }
+    }
+}
+
+chart {
+    id 3
+    title PostgreSQL - data hits
+    options {
+        ylabel blks_read/s - blks_hit/s
+        units default
+        chart-type area
+        series {
+            name blks_hit
+            color \#005467
+        }
+        series {
+            name blks_read
+            color \#ff7a0d
+        }
+    }
+}
+
+chart {
+    id 4
+    title PostgreSQL - commits/rollbacks
+    options {
+        ylabel commit/s - rollback/s
+        units default
+        chart-type area
+        series {
+            name xact_rollback
+            color \#005467
+        }
+        series {
+            name xact_commit
+            color \#ff7a0d
+        }
+    }
+}
+
+chart {
+    id 5
+    title PostgreSQL - locks
+    options {
+        ylabel locks
+        units null
+        chart-type area
+        series {
+            name exlocks
+            color \#005467
+        }
+        series {
+            name shrlocks
+            color \#ff7a0d
+        }
+    }
+}
+
+chart {
+    id 6
+    title PostgreSQL - queries
+    options {
+        ylabel queries
+        units default
+        chart-type area
+        series {
+            name n_tup_ins
+            color \#ffb244
+        }
+        series {
+            name n_tup_upd
+            color \#9a72ad
+        }
+        series {
+            name n_tup_del
+            color \#005467
+        }
+        series {
+            name seq_scan
+            color \#e9644a
+        }
+        series {
+            name seq_tup_read
+            color \#2ba743
+        }
+        series {
+            name idx_scan
+            color \#7648eb
+        }
+        series {
+            name idx_tup_fetch
+            color \#7f7fff
+        }
+    }
+}
+

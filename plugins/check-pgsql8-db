@@ -1,0 +1,271 @@
+#!/usr/bin/perl
+
+=head1 NAME
+
+check-pgsql8-db - Plugin to check postgresql status.
+
+=head1 SYNOPSIS
+
+    check-pgsql8-db [ OPTIONS ]
+
+    check-pgsql8-db --help
+
+=head1 REPORTING BUGS
+
+Please report all bugs to <support(at)bloonix.de>.
+
+=head1 AUTHOR
+
+Jonny Schulz <support(at)bloonix.de>.
+
+=head1 POWERED BY
+
+     _    __ _____ _____ __  __ __ __   __
+    | |__|  |     |     |  \|  |__|\  \/  /
+    |  . |  |  |  |  |  |      |  | >    <
+    |____|__|_____|_____|__|\__|__|/__/\__\
+
+=head1 COPYRIGHT
+
+Copyright (C) 2010-2014 by Jonny Schulz. All rights reserved.
+
+=cut
+
+use strict;
+use warnings;
+use DBI;
+use Bloonix::Plugin;
+
+# --------------------------------------------------
+# Plugin options
+# --------------------------------------------------
+
+my $plugin = Bloonix::Plugin->new(version => "0.6");
+
+$plugin->example(
+    description => "A simple example to check the PostgreSQL status",
+    arguments => [
+        username => "bloonix",
+        password => "bloonix",
+        database => "bloonix",
+        warning => "exlocks:100",
+        critical => "exlocks:150"
+    ]
+);
+
+$plugin->has_threshold(
+    keys => [qw(
+        n_tup_del n_tup_ins n_tup_upd seq_scan seq_tup_read idx_scan idx_tup_fetch
+        exlocks shrlocks locks xact_commit xact_rollback blks_hit blks_read blks_hitratio
+    )],
+    info => [
+        "blks_hit is the summary of",
+        "    heap_blks_hit + idx_blks_hit + toast_blks_hit + tidx_blks_hit",
+        "",
+        "blks_read is the summary of",
+        "    heap_blks_read + idx_blks_read + toast_blks_read + tidx_blks_read"
+    ]
+);
+
+$plugin->has_host(mandatory => 1);
+$plugin->has_port(default => 5432);
+$plugin->has_login_username;
+$plugin->has_login_password;
+$plugin->has_login_secret_file("example-file" => "pgsql.conf");
+$plugin->has_database_name(mandatory => 1);
+$plugin->has_use_ssl;
+$plugin->one_must_have_options("username", "secret-file");
+
+# --------------------------------------------------
+# Parse options
+# --------------------------------------------------
+
+my $opt = $plugin->parse_options;
+
+# --------------------------------------------------
+# Load pgsql statistics
+# --------------------------------------------------
+
+sub load {
+    my ($host, $port, $username, $password, $database) = @_;
+    my %stat = ();
+
+    my $select_statio = "
+        select ( sum(heap_blks_read)
+                 + sum(idx_blks_read)
+                 + sum(toast_blks_read)
+                 + sum(tidx_blks_read)
+               ) as blks_read,
+               ( sum(heap_blks_hit)
+                 + sum(idx_blks_hit)
+                 + sum(toast_blks_hit)
+                 + sum(tidx_blks_hit)
+               ) as blks_hit
+        from   pg_statio_user_tables
+    ";
+
+    my $select_stattab = "
+        select sum(n_tup_ins), sum(n_tup_upd), sum(n_tup_del),
+               sum(seq_scan), sum(seq_tup_read), sum(idx_scan),
+               sum(idx_tup_fetch)
+        from   pg_stat_all_tables
+    ";
+
+    my $select_locks = "
+        select pg_locks.mode
+        from   pg_locks, pg_database
+        where  pg_locks.database = pg_database.oid
+        and    pg_database.datname = ?
+    ";
+
+    my $select_statdb = "
+        select xact_commit, xact_rollback
+        from   pg_stat_database
+        where  datname = ?
+    ";
+
+    eval {
+        my $dsn = "dbi:Pg:database=$database;host=$host;port=$port";
+
+        if ($opt->{use_ssl}) {
+            $dsn .= ";sslmode=require";
+        }
+
+        my $dbh = DBI->connect($dsn, $username, $password, { RaiseError => 1 });
+        my ($sth, $row);
+
+        $sth = $dbh->prepare($select_statio);
+        $sth->execute;
+        $row = $sth->fetchrow_hashref;
+
+        foreach my $key (keys %$row) {
+            if (defined $row->{$key}) {
+                $stat{$key} = $row->{$key};
+            } else {
+                $stat{$key} = 0;
+            }
+        }
+
+        $sth->finish;
+        $sth = $dbh->prepare($select_stattab);
+        $sth->execute;
+
+        ( $stat{n_tup_ins}
+        , $stat{n_tup_upd}
+        , $stat{n_tup_del}
+        , $stat{seq_scan}
+        , $stat{seq_tup_read}
+        , $stat{idx_scan}
+        , $stat{idx_tup_fetch}
+        ) = $sth->fetchrow_array;
+
+        $sth->finish;
+        $sth = $dbh->prepare($select_locks);
+        $sth->execute($database);
+
+        $stat{exlocks}  = 0;
+        $stat{shrlocks} = 0;
+        $stat{locks}    = 0;
+
+        while (my $row = $sth->fetchrow_hashref) {
+            $stat{locks}++;
+
+            if ($row->{mode} =~ /exclusive/i) {
+                $stat{exlocks}++;
+            } elsif ($row->{mode} =~ /share/i) {
+                $stat{shrlocks}++;
+            }
+        }
+
+        $sth->finish;
+        $sth = $dbh->prepare($select_statdb);
+        $sth->execute($database);
+        ($stat{xact_commit}, $stat{xact_rollback}) = $sth->fetchrow_array;
+
+        $sth->finish;
+        $dbh->disconnect;
+    };
+
+    my $err = $@;
+
+    if ($err) {
+        chomp($err);
+        $err =~ s/\n/ /g;
+        $plugin->exit(
+            status => "CRITICAL",
+            message => $err
+        );
+    }
+
+    return \%stat;
+}
+
+# --------------------------------------------------
+# Load initial statistics
+# --------------------------------------------------
+
+my $init = $plugin->load_json;
+my $time = undef;
+
+if (defined $init) {
+    $time = delete $init->{time};
+} else {
+    $init = &load($opt->{host}, $opt->{port}, $opt->{username}, $opt->{password}, $opt->{database});
+    $time = time;
+    sleep 1;
+}
+
+# --------------------------------------------------
+# Load current statistics
+# --------------------------------------------------
+
+my $stat = &load($opt->{host}, $opt->{port}, $opt->{username}, $opt->{password}, $opt->{database});
+my $ntime = time;
+my $delta = $ntime - $time;
+
+if ($stat->{blks_read}) {
+    $stat->{blks_hitratio} = sprintf("%.2f", $stat->{blks_hits} / $stat->{blks_read} * 100);
+} else {
+    $stat->{blks_hitratio} = "0.00";
+}
+
+# --------------------------------------------------
+# Calculate deltas
+# --------------------------------------------------
+
+foreach my $key (keys %$stat) {
+    next if $key =~ /locks/;
+    my $tval = $stat->{$key};
+
+    if ($stat->{$key} == $init->{$key} || $init->{$key} > $stat->{$key}) {
+        $stat->{$key} = sprintf("%.2f", 0);
+    } elsif ($delta > 0) {
+        $stat->{$key} = sprintf("%.2f", ($stat->{$key} - $init->{$key}) / $delta);
+    } else {
+        $stat->{$key} = sprintf("%.2f", $stat->{$key} - $init->{$key});
+    }
+
+    $init->{$key} = $tval;
+}
+
+# --------------------------------------------------
+# Store statistics for the next run
+# --------------------------------------------------
+
+$init->{time} = $ntime;
+$plugin->safe_json($init);
+
+# --------------------------------------------------
+# Check warning and critical
+# --------------------------------------------------
+
+my $result = $plugin->check_thresholds(
+    stats => $stat,
+    upshot_keys => [qw(blks_hit blks_read locks exlocks shrlocks)]
+);
+
+$plugin->exit(
+    status => $result->{status},
+    message => $result->{upshot},
+    stats => $stat
+);

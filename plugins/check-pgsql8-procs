@@ -1,0 +1,151 @@
+#!/usr/bin/perl
+
+=head1 NAME
+
+check-pgsql8-procs - Plugin to check postgresql status.
+
+=head1 SYNOPSIS
+
+    check-pgsql8-procs [ OPTIONS ]
+
+    check-pgsql8-procs --help
+
+=head1 REPORTING BUGS
+
+Please report all bugs to <support(at)bloonix.de>.
+
+=head1 AUTHOR
+
+Jonny Schulz <support(at)bloonix.de>.
+
+=head1 POWERED BY
+
+     _    __ _____ _____ __  __ __ __   __
+    | |__|  |     |     |  \|  |__|\  \/  /
+    |  . |  |  |  |  |  |      |  | >    <
+    |____|__|_____|_____|__|\__|__|/__/\__\
+
+=head1 COPYRIGHT
+
+Copyright (C) 2010-2014 by Jonny Schulz. All rights reserved.
+
+=cut
+
+use strict;
+use warnings;
+use Bloonix::Plugin;
+use DBI;
+
+# --------------------------------------------------
+# Plugin options
+# --------------------------------------------------
+
+my $plugin = Bloonix::Plugin->new(version => "0.6");
+
+$plugin->example(
+    description => "A simple example to check the PostgreSQL status",
+    arguments => [
+        username => "bloonix",
+        password => "bloonix",
+        database => "bloonix",
+        warning => "busy:1000",
+        critical => "busy:1500"
+    ]
+);
+
+$plugin->has_threshold(
+    keys => [qw(total busy idle waiting select insert update delete)]
+);
+
+$plugin->has_host(mandatory => 1);
+$plugin->has_port(default => 5432);
+$plugin->has_login_username;
+$plugin->has_login_password;
+$plugin->has_login_secret_file("example-file" => "pgsql.conf");
+$plugin->has_database_name(mandatory => 1);
+$plugin->has_use_ssl;
+$plugin->one_must_have_options("username", "secret-file");
+
+# --------------------------------------------------
+# Parse options
+# --------------------------------------------------
+
+my $opt = $plugin->parse_options;
+
+# --------------------------------------------------
+# Load statistics
+# --------------------------------------------------
+
+my %stat = (
+    idle    => 0,
+    busy    => 0,
+    waiting => 0,
+    select  => 0,
+    insert  => 0,
+    update  => 0,
+    delete  => 0,
+    total   => 0,
+);
+
+my $ftime = Time::HiRes::gettimeofday();
+
+eval {
+    my $dsn = "dbi:Pg:database=$opt->{database};host=$opt->{host};port=$opt->{port}";
+
+    if ($opt->{use_ssl}) {
+        $dsn .= ";sslmode=require";
+    }
+
+    my $dbh = DBI->connect($dsn, $opt->{username}, $opt->{password}, { RaiseError => 1 });
+    my $sth = $dbh->prepare("select current_query, waiting from pg_stat_activity");
+    $sth->execute;
+
+    while (my $row = $sth->fetchrow_hashref) {
+        $stat{total}++;
+
+        if ($row->{current_query} =~ /^<IDLE>/) {
+            $stat{idle}++;
+        } else {
+            $stat{busy}++;
+
+            if ($row->{waiting} && $row->{waiting} =~ /^[1t]\z/) {
+                $stat{waiting}++;
+            }
+
+            if ($row->{current_query} =~ /^\s*(select|insert|update|delete)/i) {
+                $stat{$1}++;
+            }
+        }
+    }
+
+    $sth->finish;
+    $dbh->disconnect;
+};
+
+my $err = $@;
+
+$ftime = sprintf("%.6f", Time::HiRes::gettimeofday() - $ftime);
+
+if ($err) {
+    chomp($err);
+    $err =~ s/\n/ /g;
+    $plugin->exit(
+        status => "CRITICAL",
+        message => $err
+    );
+}
+
+# --------------------------------------------------
+# Check warning and critical
+# --------------------------------------------------
+
+my $result = $plugin->check_thresholds(
+    stats => \%stat,
+    upshot_keys => [qw(total busy idle waiting select insert update delete)]
+);
+
+$plugin->exit(
+    status => $result->{status},
+    message => $result->{upshot},
+    stats => \%stat
+);

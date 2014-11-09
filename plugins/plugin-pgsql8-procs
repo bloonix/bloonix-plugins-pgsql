@@ -1,0 +1,114 @@
+plugin {
+    id 46
+    plugin PostgreSQL.ProcessStatus
+    command check-pgsql8-procs
+    datatype statistic
+    category Database,PostgreSQL
+    abstract PostgreSQL process check
+    description PostgreSQL process statistics
+}
+
+statistic {
+    statkey total
+    alias Total
+    datatype bigint
+    description The total number of processes running.
+}
+
+statistic {
+    statkey idle
+    alias Idle
+    datatype bigint
+    description The number of processes currently idle.
+}
+
+statistic {
+    statkey busy
+    alias Busy
+    datatype bigint
+    description The number of processes currently busy.
+}
+
+statistic {
+    statkey waiting
+    alias Waiting
+    datatype bigint
+    description The number of processes currently waiting.
+}
+
+statistic {
+    statkey select
+    alias Select
+    datatype bigint
+    description The number of processes currenty executing an select statement.
+}
+
+statistic {
+    statkey insert
+    alias Insert
+    datatype bigint
+    description The number of processes currenty executing an insert statement.
+}
+
+statistic {
+    statkey update
+    alias Update
+    datatype bigint
+    description The number of processes currenty executing an update statement.
+}
+
+statistic {
+    statkey delete
+    alias Delete
+    datatype bigint
+    description The number of processes currenty executing an delete statement.
+}
+
+chart {
+    id 1
+    title PostgreSQL - idle / busy processes
+    options {
+        ylabel count
+        units null
+        chart-type area
+        series {
+            name busy
+            color \#005467
+        }
+        series {
+            name idle
+            color \#ff7a0d
+        }
+    }
+}
+
+chart {
+    id 2
+    title PostgreSQL - current queries - processes
+    options {
+        ylabel count
+        units default
+        chart-type area
+        series {
+            name select
+            color \#a0e0f0
+        }
+        series {
+            name insert
+            color \#2ba743
+        }
+        series {
+            name update
+            color \#0070f0
+        }
+        series {
+            name delete
+            color \#ffbc00
+        }
+        series {
+            name waiting
+            color \#ff5c00
+        }
+    }
+}
+

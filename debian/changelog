@@ -1,0 +1,72 @@
+bloonix-plugins-pgsql (0.12-1) unstable; urgency=low
+
+    * Updated the license information.
+
+ -- Jonny Schulz <js@bloonix.de>  Mon, 03 Nov 2014 21:17:57 +0100
+
+bloonix-plugins-pgsql (0.11-1) unstable; urgency=low
+
+    * Licence added and old releases deleted.
+
+ -- Jonny Schulz <js@bloonix.de>  Tue, 26 Aug 2014 11:44:30 +0200
+
+bloonix-plugins-pgsql (0.10-1) unstable; urgency=low
+
+    * Complete rewrite of all plugins.
+
+ -- Jonny Schulz <js@bloonix.de>  Sat, 23 Mar 2014 00:00:00 +0100
+
+bloonix-plugins-pgsql (0.7-1) unstable; urgency=low
+
+  * Added environment variable CONFIG_PATH.
+
+ -- Jonny Schulz <js@bloonix.de>  Mon, 17 Sep 2012 00:20:05 +0200
+
+bloonix-plugins-pgsql (0.6-1) unstable; urgency=low
+
+  * Improved the yaml file handling.
+
+ -- Jonny Schulz <js@bloonix.de>  Wed, 14 Mar 2012 20:07:02 +0100
+
+bloonix-plugins-pgsql (0.5-1) unstable; urgency=low
+
+  * Updated the plugin-* files.
+
+ -- Jonny Schulz <js@bloonix.de>  Tue, 29 Nov 2011 13:04:32 +0100
+
+bloonix-plugins-pgsql (0.4-1) unstable; urgency=low
+
+  * Renamed environment variables BLOONIX_PGSQL_USERNAME
+    and BLOONIX_PGSQL_PASSWORD to PGSQL_USERNAME and
+    PGSQL_PASSWORD.
+  * Renamed environment variable YAML_FILE_BASEDIR to
+    PLUGIN_LIBDIR.
+  * Kicked unused option o_stat.
+
+ -- Jonny Schulz <js@bloonix.de>  Fri, 01 Jul 2011 15:24:08 +0200
+
+bloonix-plugins-pgsql (0.3-1) unstable; urgency=low
+
+  * Renamed all plugin files from *.plugin to plugin-*.
+
+ -- Jonny Schulz <js@bloonix.de>  Mon, 27 Dec 2010 10:17:51 +0100
+
+bloonix-plugins-pgsql (0.2-2) unstable; urgency=low
+
+  * Build with gpg key.
+
+ -- Jonny Schulz <js@bloonix.de>  Sun, 12 Dec 2010 03:26:34 +0100
+
+bloonix-plugins-pgsql (0.2-1) unstable; urgency=low
+
+  * Kicked option --stat from all plugins, because
+    statistics will be printed by default on stdout.
+
+ -- Jonny Schulz <js@bloonix.de>  Wed, 17 Nov 2010 15:47:58 +0100
+
+bloonix-plugins-pgsql (0.1-1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Jonny Schulz <js@bloonix.de>  Mon, 02 Aug 2010 15:21:36 +0200
+
