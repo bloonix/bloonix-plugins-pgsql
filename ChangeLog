@@ -1,3 +1,8 @@
+bloonix-plugins-pgsql (0.13) released at 2014-11-28
+
+    * Fixed blks_hit key.
+    * Fixed invalid column name current_query for pgsql > 9.1.
+
 bloonix-plugins-pgsql (0.12) released at 2014-11-03
 
     * Updated the license information.

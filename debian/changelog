@@ -1,3 +1,10 @@
+bloonix-plugins-pgsql (0.13-1) unstable; urgency=low
+
+    * Fixed blks_hit key.
+    * Fixed invalid column name current_query for pgsql > 9.1.
+
+ -- Jonny Schulz <js@bloonix.de>  Fri, 28 Nov 2014 13:39:25 +0100
+
 bloonix-plugins-pgsql (0.12-1) unstable; urgency=low
 
     * Updated the license information.
