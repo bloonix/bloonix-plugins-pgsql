@@ -40,7 +40,7 @@ use DBI;
 # Plugin options
 # --------------------------------------------------
 
-my $plugin = Bloonix::Plugin->new(version => "0.6");
+my $plugin = Bloonix::Plugin->new(version => "0.7");
 
 $plugin->example(
     description => "A simple example to check the PostgreSQL status",
@@ -96,14 +96,26 @@ eval {
         $dsn .= ";sslmode=require";
     }
 
+    my ($sth, $column_name);
     my $dbh = DBI->connect($dsn, $opt->{username}, $opt->{password}, { RaiseError => 1 });
-    my $sth = $dbh->prepare("select current_query, waiting from pg_stat_activity");
+
+    $sth = $dbh->prepare(qq{
+        select "column_name"
+        from "information_schema"."columns"
+        where "table_name" = 'pg_stat_activity'
+        and "column_name" = 'current_query'
+    });
+
+    $sth->execute;
+    $column_name = $sth->fetchrow_hashref ? "current_query" : "query";
+    $sth->finish;
+    $sth = $dbh->prepare("select $column_name, waiting from pg_stat_activity");
     $sth->execute;
 
     while (my $row = $sth->fetchrow_hashref) {
         $stat{total}++;
 
-        if ($row->{current_query} =~ /^<IDLE>/) {
+        if ($row->{$column_name} =~ /^<IDLE>/) {
             $stat{idle}++;
         } else {
             $stat{busy}++;
@@ -112,7 +124,7 @@ eval {
                 $stat{waiting}++;
             }
 
-            if ($row->{current_query} =~ /^\s*(select|insert|update|delete)/i) {
+            if ($row->{$column_name} =~ /^\s*(select|insert|update|delete)/i) {
                 $stat{$1}++;
             }
         }
