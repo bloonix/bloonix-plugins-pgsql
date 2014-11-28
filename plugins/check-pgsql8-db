@@ -40,7 +40,7 @@ use Bloonix::Plugin;
 # Plugin options
 # --------------------------------------------------
 
-my $plugin = Bloonix::Plugin->new(version => "0.6");
+my $plugin = Bloonix::Plugin->new(version => "0.7");
 
 $plugin->example(
     description => "A simple example to check the PostgreSQL status",
@@ -224,7 +224,7 @@ my $ntime = time;
 my $delta = $ntime - $time;
 
 if ($stat->{blks_read}) {
-    $stat->{blks_hitratio} = sprintf("%.2f", $stat->{blks_hits} / $stat->{blks_read} * 100);
+    $stat->{blks_hitratio} = sprintf("%.2f", $stat->{blks_hit} / $stat->{blks_read} * 100);
 } else {
     $stat->{blks_hitratio} = "0.00";
 }
