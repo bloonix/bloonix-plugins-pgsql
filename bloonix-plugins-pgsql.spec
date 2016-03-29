@@ -1,6 +1,6 @@
 Summary: Bloonix plugins for PostgreSQL.
 Name: bloonix-plugins-pgsql
-Version: 0.13
+Version: 0.14
 Release: 1%{dist}
 License: Commercial
 Group: Utilities/System
@@ -54,6 +54,8 @@ rm -rf %{buildroot}
 %doc %attr(0444, root, root) %{docdir}/LICENSE
 
 %changelog
+* Tue Mar 29 2016 Jonny Schulz <js@bloonix.de> - 0.14-1
+- Extra release because the gpg key of bloonix is updated.
 * Fri Nov 28 2014 Jonny Schulz <js@bloonix.de> - 0.13-1
 - Fixed blks_hit key.
 - Fixed invalid column name current_query for pgsql > 9.1.
